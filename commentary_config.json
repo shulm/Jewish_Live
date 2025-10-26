@@ -1,0 +1,73 @@
+{
+  "commentary_selection": {
+    "description": "Configure which commentaries to include in the merge. Set to true to include, false to exclude.",
+
+    "Orach Chayim": {
+      "Ateret Zekenim on Shulchan Arukh, Orach Chayim": true,
+      "Ba'er Hetev on Shulchan Arukh, Orach Chayim": true,
+      "Be'er HaGolah on Shulchan Arukh, Orach Chayim": true,
+      "Beur HaGra on Shulchan Arukh, Orach Chayim": true,
+      "Chatam Sofer on Shulchan Arukh, Orach Chayim": true,
+      "Chok Yaakov on Shulchan Arukh, Orach Chayim": true,
+      "Chokhmat Shlomo on Shulchan Arukh, Orach Chayim": true,
+      "Dagul MeRevava on Shulchan Arukh, Orach Chayim": true,
+      "Eliyah Rabbah on Shulchan Arukh, Orach Chayim": true,
+      "Eshel Avraham on Shulchan Arukh, Orach Chayim": true,
+      "Kaf HaChayim on Shulchan Arukh, Orach Chayim": true,
+      "Levushei Serad on Shulchan Arukh, Orach Chayim": true,
+      "Machatzit HaShekel on Shulchan Arukh, Orach Chayim": true,
+      "Magen Avraham on Shulchan Arukh, Orach Chayim": true,
+      "Mishnah Berurah on Shulchan Arukh, Orach Chayim": true,
+      "Netiv Chayim on Shulchan Arukh, Orach Chayim": true,
+      "Rabbi Akiva Eiger on Shulchan Arukh, Orach Chayim": true,
+      "Sha'arei Teshuvah on Shulchan Arukh, Orach Chayim": true,
+      "Turei Zahav on Shulchan Arukh, Orach Chayim": true,
+      "Yad Ephraim on Shulchan Arukh, Orach Chayim": true
+    },
+
+    "Yoreh De'ah": {
+      "Ba'er Hetev on Shulchan Arukh, Yoreh De'ah": true,
+      "Be'er HaGolah on Shulchan Arukh, Yoreh De'ah": true,
+      "Beur HaGra on Shulchan Arukh, Yoreh De'ah": true,
+      "Kaf HaChayim on Shulchan Arukh, Yoreh De'ah": true,
+      "Peri Megadim on Shulchan Arukh, Yoreh De'ah": true,
+      "Pitchei Teshuva on Shulchan Arukh, Yoreh De'ah": true,
+      "Rabbi Akiva Eiger on Shulchan Arukh, Yoreh De'ah": true,
+      "Siftei Kohen on Shulchan Arukh, Yoreh De'ah": true,
+      "Yad Avraham on Shulchan Arukh, Yoreh De'ah": true,
+      "Yad Ephraim on Shulchan Arukh, Yoreh De'ah": true
+    },
+
+    "Choshen Mishpat": {
+      "Ba'er Hetev on Shulchan Arukh, Choshen Mishpat": true,
+      "Be'er HaGolah on Shulchan Arukh, Choshen Mishpat": true,
+      "Beur HaGra on Shulchan Arukh, Choshen Mishpat": true,
+      "Chokhmat Shlomo on Shulchan Arukh, Choshen Mishpat": true,
+      "Ketzot HaChoshen on Shulchan Arukh, Choshen Mishpat": true,
+      "Me'irat Einayim on Shulchan Arukh, Choshen Mishpat": true,
+      "Netivot HaMishpat on Shulchan Arukh, Choshen Mishpat": true,
+      "Pitchei Teshuva on Shulchan Arukh, Choshen Mishpat": true,
+      "Rabbi Akiva Eiger on Shulchan Arukh, Choshen Mishpat": true,
+      "Siftei Kohen on Shulchan Arukh, Choshen Mishpat": true,
+      "Turei Zahav on Shulchan Arukh, Choshen Mishpat": true
+    },
+
+    "Even HaEzer": {
+      "Ba'er Hetev on Shulchan Arukh, Even HaEzer": true,
+      "Be'er HaGolah on Shulchan Arukh, Even HaEzer": true,
+      "Beit Meir on Shulchan Arukh, Even HaEzer": true,
+      "Beur HaGra on Shulchan Arukh, Even HaEzer": true,
+      "Chokhmat Shlomo on Shulchan Arukh, Even HaEzer": true,
+      "Pitchei Teshuva on Shulchan Arukh, Even HaEzer": true,
+      "Rabbi Akiva Eiger on Shulchan Arukh, Even HaEzer": true,
+      "Turei Zahav on Shulchan Arukh, Even HaEzer": true
+    }
+  },
+
+  "output_settings": {
+    "format": "structured",
+    "output_directory": "./merged_output",
+    "include_empty_commentaries": false,
+    "preserve_original_metadata": true
+  }
+}
