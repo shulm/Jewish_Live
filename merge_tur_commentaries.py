@@ -78,9 +78,8 @@ class TurMerger:
         # Remove special control characters but keep newlines and tabs for formatting
         text = re.sub(r'[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]', '', text)
 
-        # Remove common markup artifacts
+        # Remove common markup artifacts (curly braces only, preserve square brackets)
         text = re.sub(r'\{[^}]*\}', '', text)  # Remove content in curly braces
-        text = re.sub(r'\[[^\]]*\]', '', text)  # Remove content in square brackets (optional)
 
         # Strip leading/trailing whitespace
         text = text.strip()
@@ -261,12 +260,7 @@ class TurMerger:
             logger.error(f"Failed to load main text for {section}")
             return {}
 
-        # Clean text if requested
-        if clean_text:
-            logger.info("Cleaning text from non-formatting symbols...")
-            main_data = self.clean_text_recursive(main_data)
-
-        # Extract text for the specific section
+        # Extract text for the specific section FIRST, before any cleaning
         # Tur JSON files contain all sections in a dict: {"Orach Chaim": [...], "Yoreh Deah": [...], ...}
         text_data = main_data.get('text', [])
         if isinstance(text_data, dict) and section in text_data:
@@ -275,6 +269,11 @@ class TurMerger:
 
         main_text = self.normalize_text_structure(text_data)
         logger.info(f"Loaded {len(main_text)} simanim from main text")
+
+        # Clean text if requested (after normalization, on the structured data)
+        if clean_text:
+            logger.info("Cleaning text from non-formatting symbols...")
+            main_text = self.clean_text_recursive(main_text)
 
         if len(main_text) == 0:
             logger.error(f"No simanim found in main text! Check JSON structure.")
@@ -293,17 +292,18 @@ class TurMerger:
 
             data = self.load_json(comm['path'])
             if data and 'text' in data:
-                # Clean commentary text if requested
-                if clean_text:
-                    data = self.clean_text_recursive(data)
-
-                # Extract text for the specific section (commentary files may also have multi-section format)
+                # Extract text for the specific section FIRST (commentary files may also have multi-section format)
                 comm_text_data = data['text']
                 if isinstance(comm_text_data, dict) and section in comm_text_data:
                     logger.info(f"  Extracting section '{section}' from commentary")
                     comm_text_data = comm_text_data[section]
 
                 commentary_text = self.normalize_commentary_structure(comm_text_data)
+
+                # Clean commentary text if requested (after normalization)
+                if clean_text:
+                    commentary_text = self.clean_text_recursive(commentary_text)
+
                 commentary_data[comm['name']] = {
                     'text': commentary_text
                 }
