@@ -266,7 +266,14 @@ class TurMerger:
             logger.info("Cleaning text from non-formatting symbols...")
             main_data = self.clean_text_recursive(main_data)
 
-        main_text = self.normalize_text_structure(main_data.get('text', []))
+        # Extract text for the specific section
+        # Tur JSON files contain all sections in a dict: {"Orach Chaim": [...], "Yoreh Deah": [...], ...}
+        text_data = main_data.get('text', [])
+        if isinstance(text_data, dict) and section in text_data:
+            logger.info(f"Extracting section '{section}' from multi-section file")
+            text_data = text_data[section]
+
+        main_text = self.normalize_text_structure(text_data)
         logger.info(f"Loaded {len(main_text)} simanim from main text")
 
         if len(main_text) == 0:
@@ -290,7 +297,13 @@ class TurMerger:
                 if clean_text:
                     data = self.clean_text_recursive(data)
 
-                commentary_text = self.normalize_commentary_structure(data['text'])
+                # Extract text for the specific section (commentary files may also have multi-section format)
+                comm_text_data = data['text']
+                if isinstance(comm_text_data, dict) and section in comm_text_data:
+                    logger.info(f"  Extracting section '{section}' from commentary")
+                    comm_text_data = comm_text_data[section]
+
+                commentary_text = self.normalize_commentary_structure(comm_text_data)
                 commentary_data[comm['name']] = {
                     'text': commentary_text
                 }
