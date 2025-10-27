@@ -43,10 +43,10 @@ git lfs pull
 
 ```
 Tur/
-├── Orach Chaim.json
-├── Yoreh Deah.json
-├── Even HaEzer.json
-├── Choshen Mishpat.json
+├── Orach Chaim.json        # Contains all 4 sections
+├── Yoreh Deah.json         # Contains all 4 sections
+├── Even HaEzer.json        # Contains all 4 sections
+├── Choshen Mishpat.json    # Contains all 4 sections
 └── Commentary/
     ├── Bach/Hebrew/
     ├── Beit Yosef/Hebrew/
@@ -54,6 +54,20 @@ Tur/
     ├── Drisha/Hebrew/
     └── Prisha/Hebrew/
 ```
+
+**Note:** Each Tur JSON file contains ALL four sections in a nested dictionary format:
+```json
+{
+  "text": {
+    "Orach Chaim": [[...], [...]],
+    "Yoreh Deah": [[...], [...]],
+    "Even HaEzer": [[...], [...]],
+    "Choshen Mishpat": [[...], [...]]
+  }
+}
+```
+
+The script automatically extracts the correct section from each file.
 
 ## Usage
 
