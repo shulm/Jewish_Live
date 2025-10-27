@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shulchan Arukh Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'David Libre', 'Times New Roman', serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .file-loader {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .file-loader label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .file-loader input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .control-group select,
+        .control-group button {
+            padding: 8px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .control-group button {
+            background: #667eea;
+            color: white;
+            border: none;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .control-group button:hover {
+            background: #5568d3;
+        }
+
+        .control-group button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .content {
+            display: flex;
+            min-height: 600px;
+        }
+
+        .main-text {
+            flex: 1;
+            padding: 30px;
+            border-left: 2px solid #e9ecef;
+        }
+
+        .siman-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .seif-container {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-right: 4px solid #667eea;
+        }
+
+        .seif-number {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+
+        .seif-text {
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #212529;
+            text-align: justify;
+        }
+
+        .commentaries {
+            flex: 1;
+            padding: 30px;
+            background: #fff;
+            max-height: 800px;
+            overflow-y: auto;
+        }
+
+        .commentaries-title {
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .commentary-item {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-right: 3px solid #764ba2;
+        }
+
+        .commentary-author {
+            font-weight: bold;
+            color: #764ba2;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .commentary-text {
+            color: #495057;
+            line-height: 1.7;
+            margin-top: 5px;
+            padding-right: 10px;
+        }
+
+        .no-content {
+            text-align: center;
+            padding: 50px;
+            color: #6c757d;
+            font-size: 1.2em;
+        }
+
+        .metadata {
+            padding: 20px;
+            background: #e9ecef;
+            border-bottom: 2px solid #ced4da;
+        }
+
+        .metadata-item {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .metadata-item strong {
+            color: #212529;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .search-box button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .search-box button:hover {
+            background: #5568d3;
+        }
+
+        /* Scrollbar styling */
+        .commentaries::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .commentaries::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .commentaries::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        .commentaries::-webkit-scrollbar-thumb:hover {
+            background: #5568d3;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .main-text,
+            .commentaries {
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📖 מציג שולחן ערוך</h1>
+            <h2>Shulchan Arukh Viewer</h2>
+            <div class="file-loader">
+                <label for="fileInput">בחר קובץ JSON / Select JSON File:</label>
+                <input type="file" id="fileInput" accept=".json" multiple>
+            </div>
+        </div>
+
+        <div id="metadata" class="metadata" style="display:none;">
+            <div class="metadata-item"><strong>מקור:</strong> <span id="source"></span></div>
+            <div class="metadata-item"><strong>סך סימנים:</strong> <span id="totalSimanim"></span></div>
+            <div class="metadata-item"><strong>מפרשים:</strong> <span id="commentariesList"></span></div>
+        </div>
+
+        <div class="controls" style="display:none;" id="controls">
+            <div class="control-group">
+                <label>קובץ / File:</label>
+                <select id="fileSelect"></select>
+            </div>
+            <div class="control-group">
+                <label>סימן / Siman:</label>
+                <select id="simanSelect"></select>
+            </div>
+            <div class="control-group">
+                <button id="prevSiman">◄ סימן קודם</button>
+                <button id="nextSiman">סימן הבא ►</button>
+            </div>
+            <div class="control-group">
+                <label>סעיף / Seif:</label>
+                <select id="seifSelect"></select>
+            </div>
+            <div class="control-group">
+                <button id="prevSeif">◄ סעיף קודם</button>
+                <button id="nextSeif">סעיף הבא ►</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="main-text">
+                <div id="mainContent" class="no-content">
+                    <h2>ברוכים הבאים</h2>
+                    <p>אנא העלה קובץ JSON כדי להתחיל</p>
+                    <br>
+                    <h3>Welcome</h3>
+                    <p>Please upload a JSON file to begin</p>
+                </div>
+            </div>
+            <div class="commentaries">
+                <div class="commentaries-title">מפרשים / Commentaries</div>
+                <div id="commentariesContent" class="no-content">
+                    <p>המפרשים יוצגו כאן</p>
+                    <p>Commentaries will appear here</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let filesData = {};
+        let currentFile = null;
+        let currentSiman = null;
+        let currentSeif = null;
+
+        const fileInput = document.getElementById('fileInput');
+        const fileSelect = document.getElementById('fileSelect');
+        const simanSelect = document.getElementById('simanSelect');
+        const seifSelect = document.getElementById('seifSelect');
+        const prevSimanBtn = document.getElementById('prevSiman');
+        const nextSimanBtn = document.getElementById('nextSiman');
+        const prevSeifBtn = document.getElementById('prevSeif');
+        const nextSeifBtn = document.getElementById('nextSeif');
+        const controls = document.getElementById('controls');
+        const metadata = document.getElementById('metadata');
+        const mainContent = document.getElementById('mainContent');
+        const commentariesContent = document.getElementById('commentariesContent');
+
+        fileInput.addEventListener('change', handleFileSelect);
+        fileSelect.addEventListener('change', handleFileChange);
+        simanSelect.addEventListener('change', handleSimanChange);
+        seifSelect.addEventListener('change', handleSeifChange);
+        prevSimanBtn.addEventListener('click', () => navigateSiman(-1));
+        nextSimanBtn.addEventListener('click', () => navigateSiman(1));
+        prevSeifBtn.addEventListener('click', () => navigateSeif(-1));
+        nextSeifBtn.addEventListener('click', () => navigateSeif(1));
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+
+            filesData = {};
+            fileSelect.innerHTML = '';
+
+            let filesProcessed = 0;
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        filesData[file.name] = data;
+                        
+                        const option = document.createElement('option');
+                        option.value = file.name;
+                        option.textContent = data.title || file.name;
+                        fileSelect.appendChild(option);
+
+                        filesProcessed++;
+                        if (filesProcessed === files.length) {
+                            controls.style.display = 'flex';
+                            if (fileSelect.options.length > 0) {
+                                currentFile = fileSelect.options[0].value;
+                                loadFile(currentFile);
+                            }
+                        }
+                    } catch (error) {
+                        alert(`Error loading ${file.name}: ${error.message}`);
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        function handleFileChange() {
+            currentFile = fileSelect.value;
+            loadFile(currentFile);
+        }
+
+        function loadFile(fileName) {
+            const data = filesData[fileName];
+            if (!data) return;
+
+            // Update metadata
+            metadata.style.display = 'block';
+            document.getElementById('source').textContent = data.metadata.source || data.title;
+            document.getElementById('totalSimanim').textContent = data.metadata.total_simanim || data.simanim.length;
+            document.getElementById('commentariesList').textContent = 
+                data.metadata.commentaries_included ? data.metadata.commentaries_included.join(', ') : 'N/A';
+
+            // Populate siman dropdown
+            simanSelect.innerHTML = '';
+            data.simanim.forEach(siman => {
+                const option = document.createElement('option');
+                option.value = siman.siman;
+                option.textContent = `סימן ${siman.siman}`;
+                simanSelect.appendChild(option);
+            });
+
+            if (simanSelect.options.length > 0) {
+                currentSiman = parseInt(simanSelect.options[0].value);
+                loadSiman(currentSiman);
+            }
+        }
+
+        function handleSimanChange() {
+            currentSiman = parseInt(simanSelect.value);
+            loadSiman(currentSiman);
+        }
+
+        function handleSeifChange() {
+            currentSeif = parseInt(seifSelect.value);
+            displaySeif(currentSeif);
+        }
+
+        function loadSiman(simanNumber) {
+            const data = filesData[currentFile];
+            const siman = data.simanim.find(s => s.siman === simanNumber);
+            
+            if (!siman) return;
+
+            // Populate seif dropdown
+            seifSelect.innerHTML = '';
+            siman.seifim.forEach(seif => {
+                const option = document.createElement('option');
+                option.value = seif.seif;
+                option.textContent = `סעיף ${seif.seif}`;
+                seifSelect.appendChild(option);
+            });
+
+            // Update navigation buttons
+            const currentIndex = data.simanim.findIndex(s => s.siman === simanNumber);
+            prevSimanBtn.disabled = currentIndex === 0;
+            nextSimanBtn.disabled = currentIndex === data.simanim.length - 1;
+
+            // Load first seif
+            if (seifSelect.options.length > 0) {
+                currentSeif = parseInt(seifSelect.options[0].value);
+                displaySeif(currentSeif);
+            }
+        }
+
+        function displaySeif(seifNumber) {
+            const data = filesData[currentFile];
+            const siman = data.simanim.find(s => s.siman === currentSiman);
+            const seif = siman.seifim.find(s => s.seif === seifNumber);
+
+            if (!seif) return;
+
+            // Update seif navigation buttons
+            const currentSeifIndex = siman.seifim.findIndex(s => s.seif === seifNumber);
+            prevSeifBtn.disabled = currentSeifIndex === 0;
+            nextSeifBtn.disabled = currentSeifIndex === siman.seifim.length - 1;
+
+            // Display main text
+            mainContent.innerHTML = `
+                <div class="siman-header">
+                    ${data.title} - סימן ${currentSiman}
+                </div>
+                <div class="seif-container">
+                    <div class="seif-number">סעיף ${seif.seif}</div>
+                    <div class="seif-text">${seif.text}</div>
+                </div>
+            `;
+
+            // Display commentaries
+            if (seif.commentaries && Object.keys(seif.commentaries).length > 0) {
+                let commentariesHTML = '';
+                for (const [commentaryName, commentary] of Object.entries(seif.commentaries)) {
+                    if (commentary.comments && commentary.comments.length > 0) {
+                        commentariesHTML += `
+                            <div class="commentary-item">
+                                <div class="commentary-author">${commentary.author || commentaryName}</div>
+                                ${commentary.comments.map(comment => 
+                                    `<div class="commentary-text">${comment}</div>`
+                                ).join('')}
+                            </div>
+                        `;
+                    }
+                }
+                commentariesContent.innerHTML = commentariesHTML || '<div class="no-content">אין מפרשים לסעיף זה</div>';
+            } else {
+                commentariesContent.innerHTML = '<div class="no-content">אין מפרשים לסעיף זה</div>';
+            }
+        }
+
+        function navigateSiman(direction) {
+            const data = filesData[currentFile];
+            const currentIndex = data.simanim.findIndex(s => s.siman === currentSiman);
+            const newIndex = currentIndex + direction;
+
+            if (newIndex >= 0 && newIndex < data.simanim.length) {
+                currentSiman = data.simanim[newIndex].siman;
+                simanSelect.value = currentSiman;
+                loadSiman(currentSiman);
+            }
+        }
+
+        function navigateSeif(direction) {
+            const data = filesData[currentFile];
+            const siman = data.simanim.find(s => s.siman === currentSiman);
+            const currentIndex = siman.seifim.findIndex(s => s.seif === currentSeif);
+            const newIndex = currentIndex + direction;
+
+            if (newIndex >= 0 && newIndex < siman.seifim.length) {
+                currentSeif = siman.seifim[newIndex].seif;
+                seifSelect.value = currentSeif;
+                displaySeif(currentSeif);
+            }
+        }
+    </script>
+</body>
+</html>
