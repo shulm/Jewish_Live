@@ -179,13 +179,17 @@ python3 merge_tur_commentaries.py --base-path /path/to/Tur
 The script cleans text by:
 
 1. Removing HTML tags
-2. Removing excessive whitespace
+2. Removing excessive whitespace (converting multiple spaces/newlines to single space)
 3. Removing control characters
 4. Removing content in curly braces `{}`
-5. Removing content in square brackets `[]` (optional)
-6. Stripping leading/trailing whitespace
+5. Stripping leading/trailing whitespace
 
-This ensures clean, properly formatted text in the output files.
+**Important:** Text cleaning is applied AFTER structure normalization to preserve the JSON array structure. This ensures that:
+- All seifim (subsections) are preserved
+- Text is not truncated
+- The nested structure remains intact
+
+Square brackets `[]` are preserved as they may contain important references or be part of the Hebrew text.
 
 ## Output Files
 
