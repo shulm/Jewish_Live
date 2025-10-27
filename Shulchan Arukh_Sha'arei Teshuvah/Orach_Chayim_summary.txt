@@ -1,0 +1,8 @@
+Section: Shulchan Arukh, Orach Chayim
+Commentary: Sha'arei Teshuvah on Shulchan Arukh, Orach Chayim
+
+Total Simanim: 697
+Total Se'ifim: 4171
+Se'ifim with commentary: 2534
+Total comments: 2534
+Coverage: 60.8%

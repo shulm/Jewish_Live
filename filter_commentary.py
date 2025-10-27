@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """
-Extract Single Commentary from Merged Files
-
-Takes merged JSON files (with all commentaries) and extracts just one specific
-commentary, creating new JSON files with main text + single commentary.
+Extract Single Commentary from Merged Files - IMPROVED MATCHING
 """
 
 import json
@@ -11,6 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 import argparse
 import logging
+from difflib import get_close_matches
 
 logging.basicConfig(
     level=logging.INFO,
@@ -20,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class CommentaryFilter:
-    """Filter merged files to extract single commentary."""
+    """Filter merged files to extract single commentary with smart matching."""
 
     SECTIONS = [
         "Orach_Chayim",
@@ -36,6 +34,45 @@ class CommentaryFilter:
             raise FileNotFoundError(f"Merged directory not found: {self.merged_dir}")
         
         logger.info(f"Merged files directory: {self.merged_dir}")
+
+    def normalize_name(self, name: str) -> str:
+        """Normalize commentary name for matching."""
+        # Convert to lowercase
+        name = name.lower()
+        # Remove common variations
+        name = name.replace("'", "")
+        name = name.replace("'", "")
+        name = name.replace("`", "")
+        # Remove extra spaces
+        name = " ".join(name.split())
+        return name
+
+    def find_best_match(self, search_name: str, available: List[str]) -> Optional[str]:
+        """
+        Find best matching commentary name.
+        
+        Returns exact match or closest match.
+        """
+        search_norm = self.normalize_name(search_name)
+        
+        # Try exact match first (normalized)
+        for comm in available:
+            if search_norm in self.normalize_name(comm):
+                return comm
+        
+        # Try fuzzy matching on base names (before "on Shulchan Arukh")
+        base_names = {}
+        for comm in available:
+            base = comm.split(" on ")[0] if " on " in comm else comm
+            base_names[self.normalize_name(base)] = comm
+        
+        # Find close matches
+        matches = get_close_matches(search_norm, base_names.keys(), n=1, cutoff=0.6)
+        
+        if matches:
+            return base_names[matches[0]]
+        
+        return None
 
     def load_merged_file(self, section: str) -> Optional[Dict[str, Any]]:
         """Load a merged JSON file."""
@@ -59,13 +96,7 @@ class CommentaryFilter:
         commentary_name: str,
         output_dir: str
     ):
-        """
-        Extract single commentary from all merged files.
-        
-        Args:
-            commentary_name: Name of commentary to extract (e.g., "Ba'er Hetev")
-            output_dir: Output directory for new JSON files
-        """
+        """Extract single commentary from all merged files."""
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
@@ -74,6 +105,7 @@ class CommentaryFilter:
         logger.info(f"{'='*70}\n")
 
         success_count = 0
+        all_matches = []
         
         for section in self.SECTIONS:
             logger.info(f"\n{'='*60}")
@@ -91,21 +123,20 @@ class CommentaryFilter:
             available = self.get_available_commentaries(data)
             logger.info(f"Available commentaries: {len(available)}")
             
-            # Find matching commentary
-            matching_commentary = None
-            for comm in available:
-                if commentary_name in comm:
-                    matching_commentary = comm
-                    break
+            # Find best matching commentary
+            matching_commentary = self.find_best_match(commentary_name, available)
             
             if not matching_commentary:
-                logger.warning(f"Commentary '{commentary_name}' not found in {section}")
-                logger.info(f"Available commentaries:")
-                for comm in available:
-                    logger.info(f"  - {comm}")
+                logger.warning(f"❌ Commentary '{commentary_name}' not found in {section}")
+                logger.info(f"\n📋 Available commentaries:")
+                for comm in sorted(available):
+                    base = comm.split(" on ")[0]
+                    logger.info(f"   - {base}")
+                logger.info("")
                 continue
             
-            logger.info(f"Found: {matching_commentary}")
+            logger.info(f"✅ Found: {matching_commentary}")
+            all_matches.append((section, matching_commentary))
             
             # Extract this commentary
             filtered_data = self._filter_to_single_commentary(
@@ -119,19 +150,27 @@ class CommentaryFilter:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(filtered_data, f, ensure_ascii=False, indent=2)
             
-            logger.info(f"✓ Saved: {output_file}")
+            size_mb = output_file.stat().st_size / (1024 * 1024)
+            logger.info(f"💾 Saved: {output_file} ({size_mb:.1f} MB)")
             
             # Create summary
             summary_file = output_path / f"{section}_summary.txt"
             self._write_summary(filtered_data, summary_file, matching_commentary)
-            logger.info(f"✓ Saved summary: {summary_file}")
+            logger.info(f"📄 Summary: {summary_file}")
             
             success_count += 1
 
         logger.info(f"\n{'='*70}")
         logger.info(f"EXTRACTION COMPLETE!")
         logger.info(f"Successfully processed: {success_count}/{len(self.SECTIONS)} sections")
-        logger.info(f"Output directory: {output_path.absolute()}")
+        
+        if all_matches:
+            logger.info(f"\n📚 Extracted commentaries:")
+            for section, comm in all_matches:
+                base = comm.split(" on ")[0]
+                logger.info(f"   {section}: {base}")
+        
+        logger.info(f"\n📁 Output directory: {output_path.absolute()}")
         logger.info(f"{'='*70}\n")
 
     def _filter_to_single_commentary(
@@ -203,7 +242,6 @@ class CommentaryFilter:
             f.write(f"Se'ifim with commentary: {seifim_with_commentary}\n")
             f.write(f"Total comments: {total_comments}\n")
             
-            # Calculate coverage
             if total_seifim > 0:
                 coverage = (seifim_with_commentary / total_seifim) * 100
                 f.write(f"Coverage: {coverage:.1f}%\n")
@@ -220,27 +258,27 @@ class CommentaryFilter:
             data = self.load_merged_file(section)
             if data:
                 available = self.get_available_commentaries(data)
-                print(f"\n{section}:")
-                print(f"  Total commentaries: {len(available)}")
-                for comm in available:
+                print(f"\n{section} ({len(available)} commentaries):")
+                for comm in sorted(available):
                     all_commentaries.add(comm)
-                    # Extract base name for display
                     base_name = comm.split(" on ")[0]
                     print(f"  - {base_name}")
         
         print("\n" + "="*70)
-        print("UNIQUE COMMENTARY NAMES (use these for extraction):")
+        print("UNIQUE COMMENTARY NAMES (use any of these):")
         print("="*70)
         
         unique_bases = set()
         for comm in sorted(all_commentaries):
-            base = comm.split(" on ")[0]
+            base = comm.split(" on ")[0] if " on " in comm else comm
             unique_bases.add(base)
         
         for base in sorted(unique_bases):
             print(f"  - {base}")
         
-        print("\n" + "="*70 + "\n")
+        print("\n" + "="*70)
+        print("💡 TIP: You can use partial names (e.g., 'Pitchei' instead of 'Pitchei Teshuva')")
+        print("="*70 + "\n")
 
 
 def main():
@@ -248,23 +286,24 @@ def main():
         description="Extract single commentary from merged Shulchan Arukh files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Examples:
-  # Extract Ba'er Hetev from merged files
-  python filter_commentary.py --commentary "Ba'er Hetev"
-  
-  # Extract Mishnah Berurah
-  python filter_commentary.py --commentary "Mishnah Berurah"
-  
-  # List available commentaries
-  python filter_commentary.py --list
-  
-  # Custom directories
-  python filter_commentary.py --commentary "Ba'er Hetev" --merged-dir "./merged_output" --output-dir "./BaerHetev"
+        Examples:
+          # Extract with exact name
+          python filter_commentary.py --commentary "Ba'er Hetev"
+          
+          # Extract with partial name (will find best match)
+          python filter_commentary.py --commentary "Pitchei"
+          
+          # List all available
+          python filter_commentary.py --list
+          
+          # Custom directories
+          python filter_commentary.py --commentary "Pitchei Teshuva" --merged-dir "./Shulchan Arukh_merged"
+
         """
     )
     parser.add_argument(
         '--commentary',
-        help='Commentary name to extract (e.g., "Ba\'er Hetev", "Mishnah Berurah")'
+        help='Commentary name (exact or partial, e.g., "Ba\'er Hetev", "Pitchei", "Mishnah")'
     )
     parser.add_argument(
         '--merged-dir',

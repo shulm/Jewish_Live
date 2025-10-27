@@ -1,0 +1,8 @@
+Section: Shulchan Arukh, Even HaEzer
+Commentary: Pitchei Teshuva on Shulchan Arukh, Even HaEzer
+
+Total Simanim: 178
+Total Se'ifim: 1830
+Se'ifim with commentary: 1287
+Total comments: 1287
+Coverage: 70.3%
