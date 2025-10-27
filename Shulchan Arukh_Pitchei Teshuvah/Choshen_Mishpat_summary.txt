@@ -1,8 +1,0 @@
-Section: Shulchan Arukh, Choshen Mishpat
-Commentary: Pitchei Teshuva on Shulchan Arukh, Choshen Mishpat
-
-Total Simanim: 427
-Total Se'ifim: 3694
-Se'ifim with commentary: 1682
-Total comments: 1682
-Coverage: 45.5%

@@ -1,8 +1,0 @@
-Section: Shulchan Arukh, Yoreh De'ah
-Commentary: Pitchei Teshuva on Shulchan Arukh, Yoreh De'ah
-
-Total Simanim: 403
-Total Se'ifim: 3701
-Se'ifim with commentary: 2015
-Total comments: 2015
-Coverage: 54.4%
