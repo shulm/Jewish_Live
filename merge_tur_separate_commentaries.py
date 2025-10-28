@@ -145,39 +145,54 @@ class TurCommentaryMerger:
             logger.error(f"Error loading {file_path}: {e}")
             return None
 
-    def get_simanim_from_dict(self, data_dict: Dict) -> List[tuple]:
-        """
-        Extract simanim from dict structure, returning list of (siman_num, content).
+    def extract_simanim(self, section_data: Any) -> List[tuple]:
+        """Return a list of ``(siman_number, content)`` pairs from raw section data."""
 
-        Handles two formats:
-        1. Numeric keys: {"1": [...], "2": [...], ...}
-        2. Empty string key with array: {"": [[...], [...], ...]}
-        """
-        if not isinstance(data_dict, dict):
+        def _from_sequence(items: List[Any]) -> List[tuple]:
+            results: List[tuple] = []
+            for idx, content in enumerate(items, start=1):
+                results.append((idx, content))
+            return results
+
+        if section_data is None:
             return []
 
-        # Check if there's an empty string key with an array (Tur format)
-        if "" in data_dict and isinstance(data_dict[""], list):
-            logger.info(f"  Found array under empty string key with {len(data_dict[''])} simanim")
-            simanim = []
-            for i, content in enumerate(data_dict[""]):
-                siman_num = i + 1  # Array index 0 = siman 1
-                simanim.append((siman_num, content))
+        if isinstance(section_data, list):
+            return _from_sequence(section_data)
+
+        if isinstance(section_data, dict):
+            # Primary Tur data often sits under an empty-string key with a list value.
+            if "" in section_data and isinstance(section_data[""], list):
+                logger.info(
+                    "  Found array under empty string key with %d simanim",
+                    len(section_data[""])
+                )
+                return _from_sequence(section_data[""])
+
+            simanim: List[tuple] = []
+            for key, value in section_data.items():
+                if value is None:
+                    continue
+
+                siman_num: Optional[int] = None
+
+                if isinstance(key, int):
+                    siman_num = key
+                else:
+                    # Extract a leading integer from keys like "1", "Siman 1", "1a"
+                    match = re.search(r"\d+", str(key))
+                    if match:
+                        siman_num = int(match.group())
+
+                if siman_num is None:
+                    continue
+
+                simanim.append((siman_num, value))
+
+            simanim.sort(key=lambda x: x[0])
             return simanim
 
-        # Otherwise try numeric string keys
-        simanim = []
-        for key, value in data_dict.items():
-            try:
-                siman_num = int(key)
-                simanim.append((siman_num, value))
-            except (ValueError, TypeError):
-                # Skip non-numeric keys like "Introduction"
-                pass
-
-        # Sort by siman number
-        simanim.sort(key=lambda x: x[0])
-        return simanim
+        return []
 
     def merge_section_with_commentary(
         self,
@@ -205,7 +220,7 @@ class TurCommentaryMerger:
             logger.error(f"Section '{section}' not found in main text")
             return None
 
-        main_simanim = self.get_simanim_from_dict(section_data)
+        main_simanim = self.extract_simanim(section_data)
         logger.info(f"  Loaded {len(main_simanim)} simanim from main text")
 
         # Load commentary
@@ -229,7 +244,7 @@ class TurCommentaryMerger:
         if commentary_data:
             comm_section_data = commentary_data.get('text', {}).get(section)
             if comm_section_data:
-                commentary_simanim = self.get_simanim_from_dict(comm_section_data)
+                commentary_simanim = self.extract_simanim(comm_section_data)
                 logger.info(f"  Loaded {len(commentary_simanim)} simanim from {commentary_name}")
             else:
                 logger.warning(f"  Section not found in commentary")
