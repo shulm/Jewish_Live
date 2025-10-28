@@ -37,12 +37,13 @@ class TurCommentaryMerger:
         "Choshen Mishpat": "Choshen Mishpat.json"
     }
 
+    # Map commentary names to their directory and file patterns
     COMMENTARIES = {
-        "Bach": "Tur {section}.json",
-        "Beit_Yosef": "Tur {section}, Vilna, 1923.json",
-        "Darkhei_Moshe": "Tur {section}, Vilna, 1923.json",
-        "Drisha": "Tur {section}, Vilna, 1923.json",
-        "Prisha": "Tur {section}, Vilna, 1923.json"
+        "Bach": {"dir": "Bach", "file": "Tur {section}.json"},
+        "Beit_Yosef": {"dir": "Beit Yosef", "file": "Tur {section}, Vilna, 1923.json"},
+        "Darkhei_Moshe": {"dir": "Darkhei Moshe", "file": "Tur {section}, Vilna, 1923.json"},
+        "Drisha": {"dir": "Drisha", "file": "Tur {section}, Vilna, 1923.json"},
+        "Prisha": {"dir": "Prisha", "file": "Tur {section}, Vilna, 1923.json"}
     }
 
     def __init__(self, base_path: Optional[str] = None):
@@ -93,18 +94,31 @@ class TurCommentaryMerger:
     def get_simanim_from_dict(self, data_dict: Dict) -> List[tuple]:
         """
         Extract simanim from dict structure, returning list of (siman_num, content).
-        Filters out non-numeric keys and sorts by siman number.
+
+        Handles two formats:
+        1. Numeric keys: {"1": [...], "2": [...], ...}
+        2. Empty string key with array: {"": [[...], [...], ...]}
         """
         if not isinstance(data_dict, dict):
             return []
 
+        # Check if there's an empty string key with an array (Tur format)
+        if "" in data_dict and isinstance(data_dict[""], list):
+            logger.info(f"  Found array under empty string key with {len(data_dict[''])} simanim")
+            simanim = []
+            for i, content in enumerate(data_dict[""]):
+                siman_num = i + 1  # Array index 0 = siman 1
+                simanim.append((siman_num, content))
+            return simanim
+
+        # Otherwise try numeric string keys
         simanim = []
         for key, value in data_dict.items():
             try:
                 siman_num = int(key)
                 simanim.append((siman_num, value))
             except (ValueError, TypeError):
-                # Skip non-numeric keys like "Introduction", ""
+                # Skip non-numeric keys like "Introduction"
                 pass
 
         # Sort by siman number
@@ -140,8 +154,19 @@ class TurCommentaryMerger:
         logger.info(f"  Loaded {len(main_simanim)} simanim from main text")
 
         # Load commentary
-        commentary_dir = self.commentary_path / commentary_name / "Hebrew"
-        commentary_file = commentary_dir / self.COMMENTARIES[commentary_name].format(section=section)
+        comm_info = self.COMMENTARIES[commentary_name]
+        commentary_dir = self.commentary_path / comm_info["dir"] / "Hebrew"
+
+        # Handle inconsistent naming for Choshen Mishpat (no comma before Vilna in some files)
+        if section == "Choshen Mishpat" and "{section}, Vilna" in comm_info["file"]:
+            # Try without comma first
+            commentary_file = commentary_dir / comm_info["file"].replace("{section}, Vilna", "{section} Vilna").format(section=section)
+            if not commentary_file.exists():
+                # Try with comma
+                commentary_file = commentary_dir / comm_info["file"].format(section=section)
+        else:
+            commentary_file = commentary_dir / comm_info["file"].format(section=section)
+
         commentary_data = self.load_json(commentary_file)
 
         commentary_simanim = []
