@@ -25,18 +25,56 @@ def examine_structure(file_path, name):
         if 'Orach Chaim' in data['text']:
             oc = data['text']['Orach Chaim']
             print(f"\nType of Orach Chaim: {type(oc)}")
-            print(f"Keys in Orach Chaim: {list(oc.keys())[:10]}")
 
-            # Check empty string key
-            if '' in oc:
-                arr = oc['']
-                print(f"\nFound '' (empty string) key!")
-                print(f"Type: {type(arr)}")
-                print(f"Length (number of simanim): {len(arr)}")
+            # Handle dict structure (main text)
+            if isinstance(oc, dict):
+                print(f"Keys in Orach Chaim: {list(oc.keys())[:10]}")
 
-                if len(arr) > 0:
+                # Check empty string key
+                if '' in oc:
+                    arr = oc['']
+                    print(f"\nFound '' (empty string) key!")
+                    print(f"Type: {type(arr)}")
+                    print(f"Length (number of simanim): {len(arr)}")
+
+                    if len(arr) > 0:
+                        print(f"\n--- SIMAN 1 ---")
+                        siman1 = arr[0]
+                        print(f"Type: {type(siman1)}")
+
+                        if isinstance(siman1, list):
+                            print(f"Length: {len(siman1)}")
+                            print(f"Items in siman 1:")
+                            for i, item in enumerate(siman1[:5]):  # First 5 items
+                                print(f"  [{i}] type={type(item)}")
+                                if isinstance(item, str):
+                                    print(f"      len={len(item)}, first 150 chars: {item[:150]}")
+                                elif isinstance(item, list):
+                                    print(f"      list with {len(item)} items")
+                                    if len(item) > 0:
+                                        print(f"      first item type: {type(item[0])}")
+                                        if isinstance(item[0], str):
+                                            print(f"      first item (150 chars): {item[0][:150]}")
+                        elif isinstance(siman1, str):
+                            print(f"String with length: {len(siman1)}")
+                            print(f"First 200 chars: {siman1[:200]}")
+
+                    if len(arr) > 1:
+                        print(f"\n--- SIMAN 2 ---")
+                        siman2 = arr[1]
+                        print(f"Type: {type(siman2)}")
+                        if isinstance(siman2, list):
+                            print(f"Length: {len(siman2)}")
+                            if len(siman2) > 0:
+                                print(f"First item type: {type(siman2[0])}")
+
+            # Handle list structure (commentary)
+            elif isinstance(oc, list):
+                print(f"Direct list! Length (number of simanim): {len(oc)}")
+
+                if len(oc) > 0:
                     print(f"\n--- SIMAN 1 ---")
-                    siman1 = arr[0]
+                    siman1 = oc[0]
                     print(f"Type: {type(siman1)}")
 
                     if isinstance(siman1, list):
@@ -55,10 +93,12 @@ def examine_structure(file_path, name):
                     elif isinstance(siman1, str):
                         print(f"String with length: {len(siman1)}")
                         print(f"First 200 chars: {siman1[:200]}")
+                    elif isinstance(siman1, dict):
+                        print(f"Dict with keys: {list(siman1.keys())}")
 
-                if len(arr) > 1:
+                if len(oc) > 1:
                     print(f"\n--- SIMAN 2 ---")
-                    siman2 = arr[1]
+                    siman2 = oc[1]
                     print(f"Type: {type(siman2)}")
                     if isinstance(siman2, list):
                         print(f"Length: {len(siman2)}")
