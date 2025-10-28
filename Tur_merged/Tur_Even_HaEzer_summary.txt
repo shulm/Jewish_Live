@@ -1,0 +1,8 @@
+Section: Tur, Even HaEzer
+Total Simanim: 178
+Commentaries Included (5):
+  - Bach
+  - Beit Yosef
+  - Darkhei Moshe
+  - Drisha
+  - Prisha

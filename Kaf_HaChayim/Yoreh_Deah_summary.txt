@@ -1,0 +1,8 @@
+Section: Shulchan Arukh, Yoreh De'ah
+Commentary: Kaf HaChayim on Shulchan Arukh, Yoreh De'ah
+
+Total Simanim: 403
+Total Se'ifim: 3701
+Se'ifim with commentary: 962
+Total comments: 971
+Coverage: 26.0%

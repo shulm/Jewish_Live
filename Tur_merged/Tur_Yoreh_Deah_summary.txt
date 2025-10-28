@@ -1,0 +1,8 @@
+Section: Tur, Yoreh Deah
+Total Simanim: 403
+Commentaries Included (5):
+  - Bach
+  - Beit Yosef
+  - Darkhei Moshe
+  - Drisha
+  - Prisha
