@@ -1,0 +1,8 @@
+Section: Shulchan Arukh, Orach Chayim
+Commentary: Kaf HaChayim on Shulchan Arukh, Orach Chayim
+
+Total Simanim: 697
+Total Se'ifim: 4171
+Se'ifim with commentary: 4161
+Total comments: 4337
+Coverage: 99.8%

@@ -16,6 +16,10 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+import itertools
+import unicodedata  # (not strictly used yet but good for future normalization)
+
+HEBREW_LETTERS = "אבגדהוזחטיכלמנסעפצקרשת"
 
 
 class TurMerger:
@@ -196,23 +200,198 @@ class TurMerger:
             return []
 
         return []
+    def _split_siman_into_seifim(self, siman_text: str) -> List[str]:
+        """
+        Split a single siman string (which currently includes ALL seifim)
+        into a list of seif strings.
 
-    def normalize_text_structure(self, text_data: Any) -> List[List[str]]:
-        """Normalize text structure to 2D array [siman][seif]."""
-        # First extract the actual array
-        text_array = self.extract_text_array(text_data)
+        Strategy:
+        - Look for <i data-commentator="..." data-order="N.1">
+          where N = 1,2,3,... (start of a new seif).
+        - We'll split on those boundaries and keep the marker text with the seif.
 
-        if isinstance(text_array, list):
-            normalized = []
-            for item in text_array:
-                if isinstance(item, list):
-                    normalized.append(item)
-                elif isinstance(item, str):
-                    normalized.append([item])
-                else:
-                    normalized.append([])
-            return normalized
+        If we can't detect multiple סעיפים, we just return [whole siman_text].
+        """
+
+        if not isinstance(siman_text, str):
+            return [str(siman_text)]
+
+        # Normalize newlines/whitespace a bit
+        txt = siman_text.replace("\r", "\n")
+
+        # We create an artificial delimiter before each new סעיף marker of the form data-order="N.1"
+        # Example match: <i data-commentator="Bach" data-order="12.1"></i>
+        # We'll look for data-order="<number>.1"
+        pattern = r'(<i\s+data-commentator="[^"]+"\s+data-order="(\d+)\.1"[^>]*></i>)'
+
+        # We want to keep the marker with the סעיף text, so we'll split but keep delimiters.
+        parts = re.split(pattern, txt)
+
+        # After re.split with a capturing group, the list looks like:
+        # [pre, full_marker, "12", post, full_marker, "13", post, ...]
+        # We'll reconstruct סעיפים by walking that.
+
+        seifim: List[str] = []
+        current = ""
+
+        it = iter(parts)
+        first_chunk = next(it, "")
+
+        # If the text BEFORE the first marker has content, we keep it as סעיף 1 prefix,
+        # but usually siman opens right away with marker "1.1".
+        current += first_chunk
+
+        for marker, seif_num, after_marker_text in zip(it, it, it):
+            # If we already collected text for a סעיף, push it before starting a new one
+            if current.strip():
+                seifim.append(current.strip())
+
+            # start new סעיף beginning with this marker + following text
+            current = marker + after_marker_text
+
+        # push last סעיף
+        if current.strip():
+            seifim.append(current.strip())
+
+        # If we only got one סעיף, fallback = no real split
+        if len(seifim) <= 1:
+            return [txt.strip()]
+
+        return seifim
+
+    def extract_text_array(self, text_data: Any) -> List[List[Any]]:
+        """
+        Given the section-level object (e.g. main_data['text']['Orach Chaim']),
+        return a list where each element is ONE siman,
+        and each siman is a list of seif strings.
+
+        Expected shape from source (per your mapping):
+            {
+                "Introduction": [...],
+                "": [
+                    [ "Siman1_Seif1", "Siman1_Seif2", ... ],  # Siman 1
+                    [ "Siman2_Seif1", "Siman2_Seif2", ... ],  # Siman 2
+                    ...
+                ]
+            }
+
+        We will:
+        - Prefer the "" key if present (that holds the simanim list you care about).
+        - Otherwise, fall back to any list value.
+        """
+
+        if text_data is None:
+            return []
+
+        # Case: already the 2D array [siman][seif]
+        if isinstance(text_data, list):
+            return text_data
+
+        # Case: dict like {"Introduction": [], "": [ [..],[..], ... ]}
+        if isinstance(text_data, dict):
+            if "" in text_data and isinstance(text_data[""], list):
+                return text_data[""]
+            # fallback: find first list value
+            for v in text_data.values():
+                if isinstance(v, list):
+                    return v
+
+        # Unknown structure
         return []
+    def normalize_text_structure(self, text_data: Any) -> List[List[str]]:
+        """
+        Output:
+            main_text[siman_idx][seif_idx] = clean string for that seif.
+
+        Handles the actual Tur structure you showed:
+        text_data -> { "Introduction": [], "": [ [ "WHOLE SIMAN 1" ], [ "WHOLE SIMAN 2" ], ... ] }
+
+        Each siman is currently a list with one giant string that actually contains
+        ALL סעיפים. We now split that string into סעיפים using _split_siman_into_seifim().
+        """
+
+        raw_simanim = self.extract_text_array(text_data)
+        normalized: List[List[str]] = []
+
+        for siman_raw in raw_simanim:
+            # siman_raw should represent ONE siman.
+            # In your data it's usually: [ "entire siman text with all seifim embedded" ]
+            # but let's be defensive.
+
+            if not isinstance(siman_raw, list):
+                siman_candidates = [siman_raw]
+            else:
+                siman_candidates = siman_raw
+
+            # Merge all pieces of this siman into one big string (in case it's split)
+            # Then we'll slice it into סעיפים.
+            merged_siman_text_parts: List[str] = []
+
+            for piece in siman_candidates:
+                if isinstance(piece, list):
+                    # if for some reason it's nested like ["text", "more text"]
+                    merged_siman_text_parts.extend(
+                        [seg for seg in piece if isinstance(seg, str)]
+                    )
+                elif isinstance(piece, str):
+                    merged_siman_text_parts.append(piece)
+                else:
+                    merged_siman_text_parts.append(str(piece))
+
+            merged_siman_text = " ".join(p.strip() for p in merged_siman_text_parts if p.strip())
+
+            # Now split this siman into סעיפים:
+            seif_list = self._split_siman_into_seifim(merged_siman_text)
+
+            # Clean whitespace
+            seif_list = [s.strip() for s in seif_list if s.strip()]
+
+            # Fallback
+            if not seif_list:
+                seif_list = [""]
+
+            normalized.append(seif_list)
+
+        return normalized
+    def align_commentary_to_seifim(self, commentary_simanim: List[List[Any]]) -> List[List[str]]:
+        """
+        commentary_simanim is currently [siman][chunk(s)].
+        Each siman may be one long block that actually covers multiple סעיפים,
+        marked with the same <i data-order="N.1"> anchors.
+
+        We will:
+        - join all chunks in that siman to single string
+        - split into סעיפים using _split_siman_into_seifim
+        - return [siman][seif]
+        """
+        aligned: List[List[str]] = []
+
+        for siman_raw in commentary_simanim:
+            if not isinstance(siman_raw, list):
+                siman_raw = [siman_raw]
+
+            parts = []
+            for piece in siman_raw:
+                if isinstance(piece, list):
+                    parts.extend([seg for seg in piece if isinstance(seg, str)])
+                elif isinstance(piece, str):
+                    parts.append(piece)
+                else:
+                    parts.append(str(piece))
+
+            merged = " ".join(p.strip() for p in parts if isinstance(p, str) and p.strip())
+
+            seif_list = self._split_siman_into_seifim(merged)
+            seif_list = [s.strip() for s in seif_list if s.strip()]
+            if not seif_list:
+                seif_list = [""]
+
+            aligned.append(seif_list)
+
+        return aligned
+
+
+
 
     def normalize_commentary_structure(self, text_data: Any) -> List[List[List[str]]]:
         """Normalize commentary structure to 3D array [siman][seif][comment]."""
@@ -299,6 +478,8 @@ class TurMerger:
                     comm_text_data = comm_text_data[section]
 
                 commentary_text = self.normalize_commentary_structure(comm_text_data)
+                commentary_text = self.align_commentary_to_seifim(commentary_text)
+
 
                 # Clean commentary text if requested (after normalization)
                 if clean_text:
