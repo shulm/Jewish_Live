@@ -1,10 +1,10 @@
 # Tur Commentary Merger - Separate Files
 
-**NEW SIMPLIFIED VERSION** - Creates separate JSON files for each commentary.
+**UPDATED VERSION** – Creates separate JSON files for each commentary using a sequence format.
 
 ## What This Does
 
-This script merges Tur texts with their commentaries, creating **separate output files for each commentary** (not one big merged file).
+This script merges Tur texts with their commentaries, creating **separate output files for each commentary** (not one big merged file). Each siman is represented as an ordered sequence of the base Tur text followed by the commentary entries, so consumers can present them in reading order.
 
 - **Input**: Tur main texts + Commentary files
 - **Output**: Separate JSON file for each combination (e.g., `Tur_Orach_Chaim_Bach.json`, `Tur_Orach_Chaim_Beit_Yosef.json`, etc.)
@@ -30,27 +30,52 @@ Tur JSON files have this structure:
 - No seifim separation in main text (just continuous text per siman)
 - Contains placeholders for commentaries: `<i data-commentator="Bach" data-order="1.1"></i>`
 
-### Output Structure
-Simple siman-based structure:
+### Output Structure (Default: `sequence`)
+Sequence-based structure keeps the reading order explicit while presenting
+each segment as either Tur text or commentary. Every entry declares its
+`type` (`"text"` or `"commentary"`), includes the matching string content, and
+ships with a `source` block for provenance details.
 ```json
 {
   "title": "Tur Orach Chaim",
   "commentary": "Bach",
+  "commentary_display": "Bach",
   "total_simanim": 697,
+  "output_format": "sequence",
   "simanim": [
     {
       "siman": 1,
-      "text": "Main text for siman 1...",
-      "commentary": ["Commentary text 1", "Commentary text 2", ...]
-    },
-    {
-      "siman": 2,
-      "text": "Main text for siman 2...",
-      "commentary": ["Commentary text..."]
+      "sequence": [
+        {
+          "type": "text",
+          "text": "Main text paragraph 1...",
+          "source": {
+            "work": "Tur",
+            "section": "Orach Chaim",
+            "siman": 1,
+            "category": "primary",
+            "segment_index": 1
+          }
+        },
+        {
+          "type": "commentary",
+          "commentary": "Commentary text 1...",
+          "source": {
+            "work": "Bach",
+            "section": "Orach Chaim",
+            "siman": 1,
+            "category": "commentary",
+            "commentary_name": "Bach",
+            "comment_index": 1
+          }
+        }
+      ]
     }
   ]
 }
 ```
+
+To reproduce the previous simple structure with `text` and `commentary` arrays, run the script with `--output-format simple`.
 
 ## Usage
 
@@ -60,7 +85,7 @@ Simple siman-based structure:
 python merge_tur_separate_commentaries.py
 ```
 
-This creates 20 files (4 sections × 5 commentaries):
+This creates 20 files (4 sections × 5 commentaries) using the default sequence format:
 - `Tur_Orach_Chaim_Bach.json`
 - `Tur_Orach_Chaim_Beit_Yosef.json`
 - `Tur_Orach_Chaim_Darkhei_Moshe.json`
@@ -72,7 +97,7 @@ This creates 20 files (4 sections × 5 commentaries):
 python merge_tur_separate_commentaries.py --section "Orach Chaim"
 ```
 
-Creates 5 files (one per commentary for Orach Chaim)
+Creates 5 files (one per commentary for Orach Chaim).
 
 ### Merge Specific Commentary
 
@@ -80,7 +105,7 @@ Creates 5 files (one per commentary for Orach Chaim)
 python merge_tur_separate_commentaries.py --commentary "Bach"
 ```
 
-Creates 4 files (Bach for all 4 sections)
+Creates 4 files (Bach for all 4 sections).
 
 ### Merge One Section + One Commentary
 
@@ -88,7 +113,7 @@ Creates 4 files (Bach for all 4 sections)
 python merge_tur_separate_commentaries.py --section "Orach Chaim" --commentary "Bach"
 ```
 
-Creates 1 file: `Tur_Orach_Chaim_Bach.json`
+Creates 1 file: `Tur_Orach_Chaim_Bach.json`.
 
 ### Custom Output Directory
 
@@ -101,6 +126,14 @@ python merge_tur_separate_commentaries.py --output-dir ./my_output
 ```bash
 python merge_tur_separate_commentaries.py --no-clean
 ```
+
+### Legacy Simple Output
+
+```bash
+python merge_tur_separate_commentaries.py --output-format simple
+```
+
+Outputs the previous structure with `text` and `commentary` arrays for each siman.
 
 ## Commentaries Supported
 
@@ -130,9 +163,10 @@ Use `--no-clean` to keep original formatting.
 
 Each output file contains:
 - **title**: Section name
-- **commentary**: Commentary name
+- **commentary** / **commentary_display**: Internal name and display label for the commentary
 - **total_simanim**: Number of simanim
-- **simanim**: Array of objects with siman number, main text, and commentary
+- **output_format**: Indicates whether the file was produced in `sequence` (default) or `simple` mode
+- **simanim**: Array of simanim. In sequence mode each siman has an `entries` array ordered as base text followed by commentary notes, each with `source` metadata. In simple mode the siman contains `text` and `commentary` arrays as in previous versions.
 
 ## Example Output Files
 
@@ -199,4 +233,7 @@ python merge_tur_separate_commentaries.py --output-dir ./output
 
 # Keep original formatting (no cleaning)
 python merge_tur_separate_commentaries.py --no-clean
+
+# Legacy simple structure
+python merge_tur_separate_commentaries.py --output-format simple
 ```

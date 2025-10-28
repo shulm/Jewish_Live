@@ -39,11 +39,31 @@ class TurCommentaryMerger:
 
     # Map commentary names to their directory and file patterns
     COMMENTARIES = {
-        "Bach": {"dir": "Bach", "file": "Tur {section}.json"},
-        "Beit_Yosef": {"dir": "Beit Yosef", "file": "Tur {section}, Vilna, 1923.json"},
-        "Darkhei_Moshe": {"dir": "Darkhei Moshe", "file": "Tur {section}, Vilna, 1923.json"},
-        "Drisha": {"dir": "Drisha", "file": "Tur {section}, Vilna, 1923.json"},
-        "Prisha": {"dir": "Prisha", "file": "Tur {section}, Vilna, 1923.json"}
+        "Bach": {
+            "dir": "Bach",
+            "file": "Tur {section}.json",
+            "display_name": "Bach"
+        },
+        "Beit_Yosef": {
+            "dir": "Beit Yosef",
+            "file": "Tur {section}, Vilna, 1923.json",
+            "display_name": "Beit Yosef"
+        },
+        "Darkhei_Moshe": {
+            "dir": "Darkhei Moshe",
+            "file": "Tur {section}, Vilna, 1923.json",
+            "display_name": "Darkhei Moshe"
+        },
+        "Drisha": {
+            "dir": "Drisha",
+            "file": "Tur {section}, Vilna, 1923.json",
+            "display_name": "Drisha"
+        },
+        "Prisha": {
+            "dir": "Prisha",
+            "file": "Tur {section}, Vilna, 1923.json",
+            "display_name": "Prisha"
+        }
     }
 
     def __init__(self, base_path: Optional[str] = None):
@@ -72,6 +92,40 @@ class TurCommentaryMerger:
 
         return text
 
+    def flatten_to_strings(self, data: Any, clean_text: bool = True) -> List[str]:
+        """Flatten nested lists/dicts into a list of clean strings."""
+
+        flattened: List[str] = []
+
+        def _recurse(item: Any):
+            if item is None:
+                return
+
+            if isinstance(item, str):
+                text = self.clean_text(item) if clean_text else item
+                text = text.strip()
+                if text:
+                    flattened.append(text)
+                return
+
+            if isinstance(item, list):
+                for sub in item:
+                    _recurse(sub)
+                return
+
+            if isinstance(item, dict):
+                for value in item.values():
+                    _recurse(value)
+                return
+
+            text = self.clean_text(str(item)) if clean_text else str(item)
+            text = text.strip()
+            if text:
+                flattened.append(text)
+
+        _recurse(data)
+        return flattened
+
     def load_json(self, file_path: Path) -> Optional[Dict[str, Any]]:
         """Load JSON file."""
         try:
@@ -91,45 +145,61 @@ class TurCommentaryMerger:
             logger.error(f"Error loading {file_path}: {e}")
             return None
 
-    def get_simanim_from_dict(self, data_dict: Dict) -> List[tuple]:
-        """
-        Extract simanim from dict structure, returning list of (siman_num, content).
+    def extract_simanim(self, section_data: Any) -> List[tuple]:
+        """Return a list of ``(siman_number, content)`` pairs from raw section data."""
 
-        Handles two formats:
-        1. Numeric keys: {"1": [...], "2": [...], ...}
-        2. Empty string key with array: {"": [[...], [...], ...]}
-        """
-        if not isinstance(data_dict, dict):
+        def _from_sequence(items: List[Any]) -> List[tuple]:
+            results: List[tuple] = []
+            for idx, content in enumerate(items, start=1):
+                results.append((idx, content))
+            return results
+
+        if section_data is None:
             return []
 
-        # Check if there's an empty string key with an array (Tur format)
-        if "" in data_dict and isinstance(data_dict[""], list):
-            logger.info(f"  Found array under empty string key with {len(data_dict[''])} simanim")
-            simanim = []
-            for i, content in enumerate(data_dict[""]):
-                siman_num = i + 1  # Array index 0 = siman 1
-                simanim.append((siman_num, content))
+        if isinstance(section_data, list):
+            return _from_sequence(section_data)
+
+        if isinstance(section_data, dict):
+            # Primary Tur data often sits under an empty-string key with a list value.
+            if "" in section_data and isinstance(section_data[""], list):
+                logger.info(
+                    "  Found array under empty string key with %d simanim",
+                    len(section_data[""])
+                )
+                return _from_sequence(section_data[""])
+
+            simanim: List[tuple] = []
+            for key, value in section_data.items():
+                if value is None:
+                    continue
+
+                siman_num: Optional[int] = None
+
+                if isinstance(key, int):
+                    siman_num = key
+                else:
+                    # Extract a leading integer from keys like "1", "Siman 1", "1a"
+                    match = re.search(r"\d+", str(key))
+                    if match:
+                        siman_num = int(match.group())
+
+                if siman_num is None:
+                    continue
+
+                simanim.append((siman_num, value))
+
+            simanim.sort(key=lambda x: x[0])
             return simanim
 
-        # Otherwise try numeric string keys
-        simanim = []
-        for key, value in data_dict.items():
-            try:
-                siman_num = int(key)
-                simanim.append((siman_num, value))
-            except (ValueError, TypeError):
-                # Skip non-numeric keys like "Introduction"
-                pass
-
-        # Sort by siman number
-        simanim.sort(key=lambda x: x[0])
-        return simanim
+        return []
 
     def merge_section_with_commentary(
         self,
         section: str,
         commentary_name: str,
-        clean_text: bool = True
+        clean_text: bool = True,
+        output_format: str = "sequence"
     ) -> Optional[Dict[str, Any]]:
         """
         Merge one section with one commentary.
@@ -150,12 +220,13 @@ class TurCommentaryMerger:
             logger.error(f"Section '{section}' not found in main text")
             return None
 
-        main_simanim = self.get_simanim_from_dict(section_data)
+        main_simanim = self.extract_simanim(section_data)
         logger.info(f"  Loaded {len(main_simanim)} simanim from main text")
 
         # Load commentary
         comm_info = self.COMMENTARIES[commentary_name]
         commentary_dir = self.commentary_path / comm_info["dir"] / "Hebrew"
+        commentary_display = comm_info.get("display_name", commentary_name)
 
         # Handle inconsistent naming for Choshen Mishpat (no comma before Vilna in some files)
         if section == "Choshen Mishpat" and "{section}, Vilna" in comm_info["file"]:
@@ -173,7 +244,7 @@ class TurCommentaryMerger:
         if commentary_data:
             comm_section_data = commentary_data.get('text', {}).get(section)
             if comm_section_data:
-                commentary_simanim = self.get_simanim_from_dict(comm_section_data)
+                commentary_simanim = self.extract_simanim(comm_section_data)
                 logger.info(f"  Loaded {len(commentary_simanim)} simanim from {commentary_name}")
             else:
                 logger.warning(f"  Section not found in commentary")
@@ -186,46 +257,60 @@ class TurCommentaryMerger:
         # Merge
         merged_simanim = []
         for siman_num, main_content in main_simanim:
-            # Handle main content
-            if isinstance(main_content, list):
-                # If it's a list, join all items
-                main_text = " ".join(str(item) for item in main_content if item)
-            else:
-                main_text = str(main_content) if main_content else ""
-
-            # Clean text if requested
-            if clean_text:
-                main_text = self.clean_text(main_text)
-
-            # Get commentary for this siman
+            main_segments = self.flatten_to_strings(main_content, clean_text=clean_text)
             comm_content = commentary_dict.get(siman_num, [])
-            commentary_texts = []
+            commentary_segments = self.flatten_to_strings(comm_content, clean_text=clean_text)
 
-            if isinstance(comm_content, list):
-                for item in comm_content:
-                    if isinstance(item, list):
-                        # Nested list - flatten
-                        for subitem in item:
-                            if subitem:
-                                text = self.clean_text(subitem) if clean_text else subitem
-                                commentary_texts.append(text)
-                    elif item:
-                        text = self.clean_text(item) if clean_text else item
-                        commentary_texts.append(text)
-            elif comm_content:
-                text = self.clean_text(comm_content) if clean_text else comm_content
-                commentary_texts.append(text)
+            if output_format == "sequence":
+                sequence: List[Dict[str, Any]] = []
 
-            merged_simanim.append({
-                "siman": siman_num,
-                "text": main_text,
-                "commentary": commentary_texts
-            })
+                for idx, segment in enumerate(main_segments, start=1):
+                    sequence.append({
+                        "type": "text",
+                        "text": segment,
+                        "source": {
+                            "work": "Tur",
+                            "section": section,
+                            "siman": siman_num,
+                            "category": "primary",
+                            "segment_index": idx
+                        }
+                    })
+
+                for idx, comment_text in enumerate(commentary_segments, start=1):
+                    sequence.append({
+                        "type": "commentary",
+                        "commentary": comment_text,
+                        "source": {
+                            "work": commentary_display,
+                            "section": section,
+                            "siman": siman_num,
+                            "category": "commentary",
+                            "commentary_name": commentary_display,
+                            "comment_index": idx
+                        }
+                    })
+
+                siman_record = {
+                    "siman": siman_num,
+                    "sequence": sequence
+                }
+            else:
+                main_text = " ".join(main_segments)
+                siman_record = {
+                    "siman": siman_num,
+                    "text": main_text,
+                    "commentary": commentary_segments
+                }
+
+            merged_simanim.append(siman_record)
 
         result = {
             "title": f"Tur {section}",
             "commentary": commentary_name,
+            "commentary_display": commentary_display,
             "total_simanim": len(merged_simanim),
+            "output_format": output_format,
             "simanim": merged_simanim
         }
 
@@ -236,7 +321,8 @@ class TurCommentaryMerger:
         output_dir: str,
         sections: Optional[List[str]] = None,
         commentaries: Optional[List[str]] = None,
-        clean_text: bool = True
+        clean_text: bool = True,
+        output_format: str = "sequence"
     ):
         """Merge all sections with all commentaries, creating separate files."""
         output_path = Path(output_dir)
@@ -251,7 +337,8 @@ class TurCommentaryMerger:
                     merged = self.merge_section_with_commentary(
                         section,
                         commentary,
-                        clean_text
+                        clean_text,
+                        output_format
                     )
 
                     if merged:
@@ -297,6 +384,12 @@ def main():
         help='Skip text cleaning'
     )
     parser.add_argument(
+        '--output-format',
+        choices=['sequence', 'simple'],
+        default='sequence',
+        help='Output format for merged files (default: sequence)'
+    )
+    parser.add_argument(
         '--base-path',
         default=None,
         help='Base path to Tur directory (default: ./Tur)'
@@ -310,6 +403,7 @@ def main():
         sections = [args.section] if args.section else None
         commentaries = [args.commentary] if args.commentary else None
         clean_text = not args.no_clean
+        output_format = args.output_format
 
         logger.info("\n" + "="*60)
         logger.info("TUR COMMENTARY MERGER - SEPARATE FILES")
@@ -319,7 +413,8 @@ def main():
             output_dir=args.output_dir,
             sections=sections,
             commentaries=commentaries,
-            clean_text=clean_text
+            clean_text=clean_text,
+            output_format=output_format
         )
 
         logger.info("\n" + "="*60)
