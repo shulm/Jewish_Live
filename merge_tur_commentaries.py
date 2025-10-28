@@ -394,8 +394,49 @@ class TurMerger:
 
 
     def normalize_commentary_structure(self, text_data: Any) -> List[List[List[str]]]:
-        """Normalize commentary structure to 3D array [siman][seif][comment]."""
-        # First extract the actual array
+        """
+        Normalize commentary structure to 3D array [siman][seif][comment].
+
+        Handles two formats:
+        1. Array format: [[[comment1], [comment1, comment2]], ...]
+        2. Dict format: {"1": [[comment1], [comment1, comment2]], "2": [...], ...}
+        """
+        # If it's a dict with numeric string keys (Tur format)
+        if isinstance(text_data, dict):
+            logger.info("  Detected dict format for commentary")
+            # Filter out non-numeric keys
+            numeric_keys = []
+            for key in text_data.keys():
+                try:
+                    int(key)
+                    numeric_keys.append(key)
+                except (ValueError, TypeError):
+                    pass
+
+            # Sort by numeric value
+            numeric_keys.sort(key=lambda x: int(x))
+            logger.info(f"  Found {len(numeric_keys)} simanim in commentary")
+
+            normalized = []
+            for key in numeric_keys:
+                siman_data = text_data[key]
+                if isinstance(siman_data, list):
+                    seifim = []
+                    for seif_item in siman_data:
+                        if isinstance(seif_item, list):
+                            seifim.append(seif_item)
+                        elif isinstance(seif_item, str):
+                            seifim.append([seif_item])
+                        else:
+                            seifim.append([])
+                    normalized.append(seifim)
+                elif isinstance(siman_data, str):
+                    normalized.append([[siman_data]])
+                else:
+                    normalized.append([[]])
+            return normalized
+
+        # Original logic for array format
         text_array = self.extract_text_array(text_data)
 
         if isinstance(text_array, list):
