@@ -31,9 +31,7 @@ Tur JSON files have this structure:
 - Contains placeholders for commentaries: `<i data-commentator="Bach" data-order="1.1"></i>`
 
 ### Output Structure (Default: `sequence`)
-Sequence-based structure keeps the reading order explicit while presenting
-each segment as either Tur text or commentary. Each entry includes its
-string content and a `source` block for provenance details.
+Sequence-based structure keeps the reading order explicit:
 ```json
 {
   "title": "Tur Orach Chaim",
@@ -46,23 +44,24 @@ string content and a `source` block for provenance details.
       "siman": 1,
       "entries": [
         {
-          "text": "Main text paragraph 1...",
+          "type": "text",
+          "content": "Main text for siman 1...",
           "source": {
             "work": "Tur",
             "section": "Orach Chaim",
             "siman": 1,
-            "category": "primary",
-            "segment_index": 1
+            "category": "primary"
           }
         },
         {
-          "commentary": "Commentary text 1...",
+          "type": "commentary",
+          "name": "Bach",
+          "content": "Commentary text 1",
           "source": {
             "work": "Bach",
             "section": "Orach Chaim",
             "siman": 1,
             "category": "commentary",
-            "commentary_name": "Bach",
             "comment_index": 1
           }
         }

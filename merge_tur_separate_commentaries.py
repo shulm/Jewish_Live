@@ -243,33 +243,35 @@ class TurCommentaryMerger:
         merged_simanim = []
         for siman_num, main_content in main_simanim:
             main_segments = self.flatten_to_strings(main_content, clean_text=clean_text)
+            main_text = " ".join(main_segments)
+
             comm_content = commentary_dict.get(siman_num, [])
             commentary_segments = self.flatten_to_strings(comm_content, clean_text=clean_text)
 
             if output_format == "sequence":
                 sequence: List[Dict[str, Any]] = []
 
-                for idx, segment in enumerate(main_segments, start=1):
-                    sequence.append({
-                        "text": segment,
-                        "source": {
-                            "work": "Tur",
-                            "section": section,
-                            "siman": siman_num,
-                            "category": "primary",
-                            "segment_index": idx
-                        }
-                    })
+                sequence.append({
+                    "type": "text",
+                    "content": main_text,
+                    "source": {
+                        "work": "Tur",
+                        "section": section,
+                        "siman": siman_num,
+                        "category": "primary"
+                    }
+                })
 
                 for idx, comment_text in enumerate(commentary_segments, start=1):
                     sequence.append({
-                        "commentary": comment_text,
+                        "type": "commentary",
+                        "name": commentary_display,
+                        "content": comment_text,
                         "source": {
                             "work": commentary_display,
                             "section": section,
                             "siman": siman_num,
                             "category": "commentary",
-                            "commentary_name": commentary_display,
                             "comment_index": idx
                         }
                     })
@@ -279,7 +281,6 @@ class TurCommentaryMerger:
                     "entries": sequence
                 }
             else:
-                main_text = " ".join(main_segments)
                 siman_record = {
                     "siman": siman_num,
                     "text": main_text,
