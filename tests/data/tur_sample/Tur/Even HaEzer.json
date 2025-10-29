@@ -1,0 +1,17 @@
+{
+  "text": {
+    "Even HaEzer": {
+      "": [
+        [
+          "<p>First Tur paragraph for siman aleph.</p>",
+          "<p>Second paragraph referencing <i data-commentator=\"Beit Yosef\" data-order=\"1.1\"></i> placeholder.</p>"
+        ],
+        {
+          "paragraphs": [
+            "<p>Opening of siman bet.</p>"
+          ]
+        }
+      ]
+    }
+  }
+}

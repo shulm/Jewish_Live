@@ -1,10 +1,10 @@
 # Tur Commentary Merger - Separate Files
 
-**NEW SIMPLIFIED VERSION** - Creates separate JSON files for each commentary.
+**UPDATED VERSION** – Creates separate JSON files for each commentary, inserting commentary text directly where the Tur provides placeholders.
 
 ## What This Does
 
-This script merges Tur texts with their commentaries, creating **separate output files for each commentary** (not one big merged file).
+This script merges Tur texts with their commentaries, creating **separate output files for each commentary** (not one big merged file). Each siman is represented as an ordered sequence of the base Tur text followed by the commentary entries, so consumers can present them in reading order.
 
 - **Input**: Tur main texts + Commentary files
 - **Output**: Separate JSON file for each combination (e.g., `Tur_Orach_Chaim_Bach.json`, `Tur_Orach_Chaim_Beit_Yosef.json`, etc.)
@@ -12,7 +12,7 @@ This script merges Tur texts with their commentaries, creating **separate output
 ## Structure
 
 ### Tur Text Structure
-Tur JSON files have this structure:
+Tur JSON files typically look like this:
 ```json
 {
   "text": {
@@ -28,29 +28,107 @@ Tur JSON files have this structure:
 
 - Each siman is a dictionary key
 - No seifim separation in main text (just continuous text per siman)
-- Contains placeholders for commentaries: `<i data-commentator="Bach" data-order="1.1"></i>`
+- Commentaries are referenced via placeholders such as `<i data-commentator="Bach" data-order="1.1"></i>`.
 
-### Output Structure
-Simple siman-based structure:
+### Commentary Structure
+Commentary JSON stores simanim as arrays or dicts with paragraph lists, for example:
 ```json
 {
-  "title": "Tur Orach Chaim",
-  "commentary": "Bach",
+  "text": {
+    "Orach Chaim": {
+      "Siman 1": {
+        "paragraphs": [
+          "<p>First comment...</p>",
+          "<p>Second comment...</p>"
+        ]
+      }
+    }
+  }
+}
+```
+
+Comment entries are enumerated so they can be paired with placeholder `data-order` values inside the main text.
+
+### Output Structure (Default: `embedded`)
+The default `embedded` output stitches commentary segments into the reading
+order of the Tur text. Every siman lists `entries` that contain the text
+leading up to a placeholder and the matching commentary (if available).
+```json
+{
+  "metadata": {
+    "section": "Orach Chaim",
+    "commentary_key": "Beit_Yosef",
+    "commentary_display": "Beit Yosef",
+    "output_format": "embedded",
+    "sources": {
+      "primary": {
+        "work": "Tur Orach Chaim",
+        "path": "Tur/Orach Chaim.json"
+      },
+      "commentary": {
+        "work": "Beit Yosef",
+        "key": "Beit_Yosef",
+        "path": "Tur/Commentary/Beit Yosef/Hebrew/Tur Orach Chaim, Vilna, 1923.json"
+      }
+    }
+  },
   "total_simanim": 697,
   "simanim": [
     {
       "siman": 1,
-      "text": "Main text for siman 1...",
-      "commentary": ["Commentary text 1", "Commentary text 2", ...]
-    },
-    {
-      "siman": 2,
-      "text": "Main text for siman 2...",
-      "commentary": ["Commentary text..."]
+      "entries": [
+        {
+          "text": {
+            "content": "Introductory Tur paragraph...",
+            "source": {
+              "type": "primary",
+              "work": "Tur",
+              "section": "Orach Chaim",
+              "siman": 1,
+              "segment_index": 1
+            }
+          },
+          "commentary": {
+            "content": "Matching commentary text...",
+            "order": "1.1",
+            "status": "matched",
+            "commentator": "Beit Yosef",
+            "source": {
+              "type": "commentary",
+              "work": "Beit Yosef",
+              "section": "Orach Chaim",
+              "siman": 1,
+              "commentary_key": "Beit_Yosef",
+              "comment_index": 1
+            }
+          }
+        },
+        {
+          "text": {
+            "content": "Continuation of the Tur after the placeholder...",
+            "source": {
+              "type": "primary",
+              "work": "Tur",
+              "section": "Orach Chaim",
+              "siman": 1,
+              "segment_index": 2
+            }
+          }
+        }
+      ]
     }
   ]
 }
 ```
+
+Each entry exposes provenance in its `source` block and records whether a
+commentary snippet was matched, supplied as a fallback, or left unused.
+
+### Alternate Output Modes
+- `--output-format sequence` restores the linear list of `type`/`text` entries
+  from the previous release.
+- `--output-format simple` returns the legacy structure with `text` and
+  `commentary` arrays per siman.
 
 ## Usage
 
@@ -60,7 +138,7 @@ Simple siman-based structure:
 python merge_tur_separate_commentaries.py
 ```
 
-This creates 20 files (4 sections × 5 commentaries):
+This creates 20 files (4 sections × 5 commentaries) using the default embedded format:
 - `Tur_Orach_Chaim_Bach.json`
 - `Tur_Orach_Chaim_Beit_Yosef.json`
 - `Tur_Orach_Chaim_Darkhei_Moshe.json`
@@ -72,7 +150,7 @@ This creates 20 files (4 sections × 5 commentaries):
 python merge_tur_separate_commentaries.py --section "Orach Chaim"
 ```
 
-Creates 5 files (one per commentary for Orach Chaim)
+Creates 5 files (one per commentary for Orach Chaim).
 
 ### Merge Specific Commentary
 
@@ -80,7 +158,7 @@ Creates 5 files (one per commentary for Orach Chaim)
 python merge_tur_separate_commentaries.py --commentary "Bach"
 ```
 
-Creates 4 files (Bach for all 4 sections)
+Creates 4 files (Bach for all 4 sections).
 
 ### Merge One Section + One Commentary
 
@@ -88,7 +166,7 @@ Creates 4 files (Bach for all 4 sections)
 python merge_tur_separate_commentaries.py --section "Orach Chaim" --commentary "Bach"
 ```
 
-Creates 1 file: `Tur_Orach_Chaim_Bach.json`
+Creates 1 file: `Tur_Orach_Chaim_Bach.json`.
 
 ### Custom Output Directory
 
@@ -101,6 +179,11 @@ python merge_tur_separate_commentaries.py --output-dir ./my_output
 ```bash
 python merge_tur_separate_commentaries.py --no-clean
 ```
+
+### Alternate Formats
+
+- `--output-format sequence` &rarr; reproduces the previous sequence layout.
+- `--output-format simple` &rarr; emits the classic `text`/`commentary` arrays per siman.
 
 ## Commentaries Supported
 
@@ -129,10 +212,12 @@ Use `--no-clean` to keep original formatting.
 ## Output Files
 
 Each output file contains:
-- **title**: Section name
-- **commentary**: Commentary name
-- **total_simanim**: Number of simanim
-- **simanim**: Array of objects with siman number, main text, and commentary
+- **metadata**: Section, commentary identifiers, selected output format, and source attribution for the Tur text and commentary.
+- **total_simanim**: Number of simanim merged.
+- **simanim**: Array of simanim.
+  - In `embedded` mode each siman exposes `entries` that align Tur text with commentaries at their placeholders.
+  - In `sequence` mode each siman retains the legacy `sequence` array of ordered text/commentary segments.
+  - In `simple` mode each siman contains `text` and `commentary` arrays like earlier versions of the script.
 
 ## Example Output Files
 
@@ -157,10 +242,10 @@ Tur_Yoreh_Deah_Bach.json
 
 **New script** (`merge_tur_separate_commentaries.py`):
 - ✓ Creates separate files per commentary
-- ✓ Simple siman-based structure
-- ✓ Works with Tur's dict-based format
-- ✓ No seifim complexity
-- ✓ Clean, straightforward output
+- ✓ Inserts commentary into the primary text flow using placeholders
+- ✓ Offers `embedded`, `sequence`, and `simple` output modes
+- ✓ Works with Tur's dict-based format without seifim complexity
+- ✓ Exposes detailed provenance metadata for every segment
 
 ## Requirements
 
@@ -199,4 +284,7 @@ python merge_tur_separate_commentaries.py --output-dir ./output
 
 # Keep original formatting (no cleaning)
 python merge_tur_separate_commentaries.py --no-clean
+
+# Legacy simple structure
+python merge_tur_separate_commentaries.py --output-format simple
 ```
