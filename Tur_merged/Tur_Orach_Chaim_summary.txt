@@ -1,8 +1,0 @@
-Section: Tur, Orach Chaim
-Total Simanim: 697
-Commentaries Included (5):
-  - Bach
-  - Beit Yosef
-  - Darkhei Moshe
-  - Drisha
-  - Prisha
