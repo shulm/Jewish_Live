@@ -335,7 +335,7 @@ class TurPlaceholderMerger:
             entries = []
 
             if relevant_placeholders:
-                # Parse by placeholders and insert commentary
+                # Parse by placeholders and pair text with commentary
                 segments = self.split_text_by_placeholders(combined_text, commentary_display)
 
                 # Create a mapping of order to commentary text
@@ -345,26 +345,15 @@ class TurPlaceholderMerger:
                     order_key = f"{siman_num}.{idx + 1}"
                     order_to_comment[order_key] = comment
 
-                segment_index = 0
                 comment_index = 0
+                current_text = None
 
                 for seg in segments:
                     if seg['type'] == 'text':
-                        segment_index += 1
-                        entries.append({
-                            "text": {
-                                "content": seg['content'],
-                                "source": {
-                                    "work": "Tur",
-                                    "section": section,
-                                    "siman": siman_num,
-                                    "category": "primary",
-                                    "segment_index": segment_index
-                                }
-                            }
-                        })
+                        # Store text, will pair with next commentary
+                        current_text = seg['content']
                     elif seg['type'] == 'placeholder':
-                        # Insert commentary at placeholder
+                        # Pair previous text with this commentary
                         order = seg['order']
                         comment_text = order_to_comment.get(order, "")
 
@@ -372,52 +361,60 @@ class TurPlaceholderMerger:
                             # Fallback to sequential commentary if order doesn't match
                             comment_text = commentary_segments[comment_index]
 
-                        if comment_text:
+                        if current_text or comment_text:
                             comment_index += 1
                             entries.append({
-                                "commentary": {
-                                    "content": comment_text,
-                                    "source": {
-                                        "work": commentary_display,
-                                        "section": section,
-                                        "siman": siman_num,
-                                        "category": "commentary",
-                                        "commentary_name": commentary_display,
-                                        "order": order,
-                                        "comment_index": comment_index
-                                    }
-                                }
+                                "text": {"content": current_text or ""},
+                                "commentary": {"content": comment_text or ""}
                             })
-            else:
-                # No placeholders, just add text and then all commentary
-                clean_combined = self.clean_text(combined_text)
-                if clean_combined:
+                            current_text = None
+
+                # Handle remaining text and/or commentary
+                if current_text and comment_index < len(commentary_segments):
+                    # Pair remaining text with next commentary
                     entries.append({
-                        "text": {
-                            "content": clean_combined,
-                            "source": {
-                                "work": "Tur",
-                                "section": section,
-                                "siman": siman_num,
-                                "category": "primary"
-                            }
-                        }
+                        "text": {"content": current_text},
+                        "commentary": {"content": commentary_segments[comment_index]}
+                    })
+                    comment_index += 1
+                    current_text = None
+                elif current_text:
+                    # Text without commentary
+                    entries.append({
+                        "text": {"content": current_text},
+                        "commentary": {"content": ""}
+                    })
+                    current_text = None
+
+                # Handle any remaining commentary pieces
+                while comment_index < len(commentary_segments):
+                    entries.append({
+                        "text": {"content": ""},
+                        "commentary": {"content": commentary_segments[comment_index]}
+                    })
+                    comment_index += 1
+            else:
+                # No placeholders - pair text with all commentary sequentially
+                clean_combined = self.clean_text(combined_text)
+
+                if commentary_segments:
+                    # Pair the main text with first commentary, then rest of commentaries
+                    entries.append({
+                        "text": {"content": clean_combined},
+                        "commentary": {"content": commentary_segments[0] if commentary_segments else ""}
                     })
 
-                # Add all commentary entries
-                for idx, comment_text in enumerate(commentary_segments, start=1):
+                    # Add remaining commentary entries with empty text
+                    for comment_text in commentary_segments[1:]:
+                        entries.append({
+                            "text": {"content": ""},
+                            "commentary": {"content": comment_text}
+                        })
+                else:
+                    # Just text, no commentary
                     entries.append({
-                        "commentary": {
-                            "content": comment_text,
-                            "source": {
-                                "work": commentary_display,
-                                "section": section,
-                                "siman": siman_num,
-                                "category": "commentary",
-                                "commentary_name": commentary_display,
-                                "comment_index": idx
-                            }
-                        }
+                        "text": {"content": clean_combined},
+                        "commentary": {"content": ""}
                     })
 
             if entries:
