@@ -12,7 +12,7 @@ This script merges Tur texts with their commentaries, creating **separate output
 ## Structure
 
 ### Tur Text Structure
-Tur JSON files have this structure:
+Tur JSON files typically look like this:
 ```json
 {
   "text": {
@@ -28,7 +28,7 @@ Tur JSON files have this structure:
 
 - Each siman is a dictionary key
 - No seifim separation in main text (just continuous text per siman)
-- Contains placeholders for commentaries: `<i data-commentator="Bach" data-order="1.1"></i>`
+- Commentaries are referenced via placeholders such as `<i data-commentator="Bach" data-order="1.1"></i>`.
 
 ### Output Structure (Default: `sequence`)
 Sequence-based structure keeps the reading order explicit:
@@ -187,10 +187,10 @@ Tur_Yoreh_Deah_Bach.json
 
 **New script** (`merge_tur_separate_commentaries.py`):
 - ✓ Creates separate files per commentary
-- ✓ Simple siman-based structure
-- ✓ Works with Tur's dict-based format
-- ✓ No seifim complexity
-- ✓ Clean, straightforward output
+- ✓ Inserts commentary into the primary text flow using placeholders
+- ✓ Offers `embedded`, `sequence`, and `simple` output modes
+- ✓ Works with Tur's dict-based format without seifim complexity
+- ✓ Exposes detailed provenance metadata for every segment
 
 ## Requirements
 

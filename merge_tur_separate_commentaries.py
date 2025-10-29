@@ -9,7 +9,7 @@ output file for each commentary. Structure is simple: siman-based only.
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple, Iterable
 import argparse
 import logging
 
@@ -254,7 +254,6 @@ class TurCommentaryMerger:
         # Create commentary dict for quick lookup
         commentary_dict = {siman_num: content for siman_num, content in commentary_simanim}
 
-        # Merge
         merged_simanim = []
         for siman_num, main_content in main_simanim:
             main_segments = self.flatten_to_strings(main_content, clean_text=clean_text)
