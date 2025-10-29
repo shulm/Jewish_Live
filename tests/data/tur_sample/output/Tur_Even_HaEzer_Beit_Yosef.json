@@ -1,134 +1,85 @@
 {
-  "metadata": {
-    "title": "Tur Even HaEzer",
-    "section": "Even HaEzer",
-    "commentary_key": "Beit_Yosef",
-    "commentary_display": "Beit Yosef",
-    "output_format": "embedded",
-    "sources": {
-      "primary": {
-        "work": "Tur Even HaEzer",
-        "path": "tests/data/tur_sample/Tur/Even HaEzer.json"
-      },
-      "commentary": {
-        "work": "Beit Yosef",
-        "key": "Beit_Yosef",
-        "path": "tests/data/tur_sample/Tur/Commentary/Beit Yosef/Hebrew/Tur Even HaEzer, Vilna, 1923.json"
-      }
-    }
-  },
+  "title": "Tur Even HaEzer",
+  "commentary": "Beit_Yosef",
+  "commentary_display": "Beit Yosef",
   "total_simanim": 2,
+  "output_format": "sequence",
   "simanim": [
     {
       "siman": 1,
-      "entries": [
+      "sequence": [
         {
-          "text": {
-            "content": "First Tur paragraph for siman aleph.",
-            "source": {
-              "type": "primary",
-              "work": "Tur",
-              "section": "Even HaEzer",
-              "siman": 1,
-              "segment_index": 1
-            },
-            "raw": "<p>First Tur paragraph for siman aleph.</p>"
+          "type": "text",
+          "text": "First Tur paragraph for siman aleph.",
+          "source": {
+            "work": "Tur",
+            "section": "Even HaEzer",
+            "siman": 1,
+            "category": "primary",
+            "segment_index": 1
           }
         },
         {
-          "text": {
-            "content": "Second paragraph referencing",
-            "source": {
-              "type": "primary",
-              "work": "Tur",
-              "section": "Even HaEzer",
-              "siman": 1,
-              "segment_index": 2
-            },
-            "raw": "<p>Second paragraph referencing"
-          },
-          "commentary": {
-            "commentator": "Beit Yosef",
-            "order": "1.1",
-            "status": "matched",
-            "source": {
-              "type": "commentary",
-              "work": "Beit Yosef",
-              "section": "Even HaEzer",
-              "siman": 1,
-              "commentary_key": "Beit_Yosef",
-              "comment_index": 1
-            },
-            "resolved_order": "1.1",
-            "content": "First comment on siman aleph.",
-            "raw": "<p>First comment on siman aleph.</p>"
+          "type": "text",
+          "text": "Second paragraph referencing placeholder.",
+          "source": {
+            "work": "Tur",
+            "section": "Even HaEzer",
+            "siman": 1,
+            "category": "primary",
+            "segment_index": 2
           }
         },
         {
-          "text": {
-            "content": "placeholder.",
-            "source": {
-              "type": "primary",
-              "work": "Tur",
-              "section": "Even HaEzer",
-              "siman": 1,
-              "segment_index": 3
-            },
-            "raw": "placeholder.</p>"
+          "type": "commentary",
+          "commentary": "First comment on siman aleph.",
+          "source": {
+            "work": "Beit Yosef",
+            "section": "Even HaEzer",
+            "siman": 1,
+            "category": "commentary",
+            "commentary_name": "Beit Yosef",
+            "comment_index": 1
           }
         },
         {
-          "commentary": {
-            "commentator": "Beit Yosef",
-            "order": "1.2",
-            "status": "unplaced",
-            "source": {
-              "type": "commentary",
-              "work": "Beit Yosef",
-              "section": "Even HaEzer",
-              "siman": 1,
-              "commentary_key": "Beit_Yosef",
-              "comment_index": 2
-            },
-            "resolved_order": "1.2",
-            "content": "Additional insight.",
-            "raw": "<p>Additional insight.</p>"
+          "type": "commentary",
+          "commentary": "Additional insight.",
+          "source": {
+            "work": "Beit Yosef",
+            "section": "Even HaEzer",
+            "siman": 1,
+            "category": "commentary",
+            "commentary_name": "Beit Yosef",
+            "comment_index": 2
           }
         }
       ]
     },
     {
       "siman": 2,
-      "entries": [
+      "sequence": [
         {
-          "text": {
-            "content": "Opening of siman bet.",
-            "source": {
-              "type": "primary",
-              "work": "Tur",
-              "section": "Even HaEzer",
-              "siman": 2,
-              "segment_index": 1
-            },
-            "raw": "<p>Opening of siman bet.</p>"
+          "type": "text",
+          "text": "Opening of siman bet.",
+          "source": {
+            "work": "Tur",
+            "section": "Even HaEzer",
+            "siman": 2,
+            "category": "primary",
+            "segment_index": 1
           }
         },
         {
-          "commentary": {
-            "commentator": "Beit Yosef",
-            "order": "2.1",
-            "status": "unplaced",
-            "source": {
-              "type": "commentary",
-              "work": "Beit Yosef",
-              "section": "Even HaEzer",
-              "siman": 2,
-              "commentary_key": "Beit_Yosef",
-              "comment_index": 1
-            },
-            "resolved_order": "2.1",
-            "content": "Commentary for siman bet.",
-            "raw": "<p>Commentary for siman bet.</p>"
+          "type": "commentary",
+          "commentary": "Commentary for siman bet.",
+          "source": {
+            "work": "Beit Yosef",
+            "section": "Even HaEzer",
+            "siman": 2,
+            "category": "commentary",
+            "commentary_name": "Beit Yosef",
+            "comment_index": 1
           }
         }
       ]

@@ -1,6 +1,6 @@
 # Tur Commentary Merger - Separate Files
 
-**UPDATED VERSION** – Creates separate JSON files for each commentary, inserting commentary text directly where the Tur provides placeholders.
+**UPDATED VERSION** – Creates separate JSON files for each commentary using a sequence format.
 
 ## What This Does
 
@@ -30,89 +30,39 @@ Tur JSON files typically look like this:
 - No seifim separation in main text (just continuous text per siman)
 - Commentaries are referenced via placeholders such as `<i data-commentator="Bach" data-order="1.1"></i>`.
 
-### Commentary Structure
-Commentary JSON stores simanim as arrays or dicts with paragraph lists, for example:
+### Output Structure (Default: `sequence`)
+Sequence-based structure keeps the reading order explicit:
 ```json
 {
-  "text": {
-    "Orach Chaim": {
-      "Siman 1": {
-        "paragraphs": [
-          "<p>First comment...</p>",
-          "<p>Second comment...</p>"
-        ]
-      }
-    }
-  }
-}
-```
-
-Comment entries are enumerated so they can be paired with placeholder `data-order` values inside the main text.
-
-### Output Structure (Default: `embedded`)
-The default `embedded` output stitches commentary segments into the reading
-order of the Tur text. Every siman lists `entries` that contain the text
-leading up to a placeholder and the matching commentary (if available).
-```json
-{
-  "metadata": {
-    "section": "Orach Chaim",
-    "commentary_key": "Beit_Yosef",
-    "commentary_display": "Beit Yosef",
-    "output_format": "embedded",
-    "sources": {
-      "primary": {
-        "work": "Tur Orach Chaim",
-        "path": "Tur/Orach Chaim.json"
-      },
-      "commentary": {
-        "work": "Beit Yosef",
-        "key": "Beit_Yosef",
-        "path": "Tur/Commentary/Beit Yosef/Hebrew/Tur Orach Chaim, Vilna, 1923.json"
-      }
-    }
-  },
+  "title": "Tur Orach Chaim",
+  "commentary": "Bach",
+  "commentary_display": "Bach",
   "total_simanim": 697,
+  "output_format": "sequence",
   "simanim": [
     {
       "siman": 1,
       "entries": [
         {
-          "text": {
-            "content": "Introductory Tur paragraph...",
-            "source": {
-              "type": "primary",
-              "work": "Tur",
-              "section": "Orach Chaim",
-              "siman": 1,
-              "segment_index": 1
-            }
-          },
-          "commentary": {
-            "content": "Matching commentary text...",
-            "order": "1.1",
-            "status": "matched",
-            "commentator": "Beit Yosef",
-            "source": {
-              "type": "commentary",
-              "work": "Beit Yosef",
-              "section": "Orach Chaim",
-              "siman": 1,
-              "commentary_key": "Beit_Yosef",
-              "comment_index": 1
-            }
+          "type": "text",
+          "content": "Main text for siman 1...",
+          "source": {
+            "work": "Tur",
+            "section": "Orach Chaim",
+            "siman": 1,
+            "category": "primary"
           }
         },
         {
-          "text": {
-            "content": "Continuation of the Tur after the placeholder...",
-            "source": {
-              "type": "primary",
-              "work": "Tur",
-              "section": "Orach Chaim",
-              "siman": 1,
-              "segment_index": 2
-            }
+          "type": "commentary",
+          "name": "Bach",
+          "content": "Commentary text 1",
+          "source": {
+            "work": "Bach",
+            "section": "Orach Chaim",
+            "siman": 1,
+            "category": "commentary",
+            "comment_index": 1
           }
         }
       ]
@@ -121,14 +71,7 @@ leading up to a placeholder and the matching commentary (if available).
 }
 ```
 
-Each entry exposes provenance in its `source` block and records whether a
-commentary snippet was matched, supplied as a fallback, or left unused.
-
-### Alternate Output Modes
-- `--output-format sequence` restores the linear list of `type`/`text` entries
-  from the previous release.
-- `--output-format simple` returns the legacy structure with `text` and
-  `commentary` arrays per siman.
+To reproduce the previous simple structure with `text` and `commentary` arrays, run the script with `--output-format simple`.
 
 ## Usage
 
@@ -138,7 +81,7 @@ commentary snippet was matched, supplied as a fallback, or left unused.
 python merge_tur_separate_commentaries.py
 ```
 
-This creates 20 files (4 sections × 5 commentaries) using the default embedded format:
+This creates 20 files (4 sections × 5 commentaries) using the default sequence format:
 - `Tur_Orach_Chaim_Bach.json`
 - `Tur_Orach_Chaim_Beit_Yosef.json`
 - `Tur_Orach_Chaim_Darkhei_Moshe.json`
@@ -180,10 +123,13 @@ python merge_tur_separate_commentaries.py --output-dir ./my_output
 python merge_tur_separate_commentaries.py --no-clean
 ```
 
-### Alternate Formats
+### Legacy Simple Output
 
-- `--output-format sequence` &rarr; reproduces the previous sequence layout.
-- `--output-format simple` &rarr; emits the classic `text`/`commentary` arrays per siman.
+```bash
+python merge_tur_separate_commentaries.py --output-format simple
+```
+
+Outputs the previous structure with `text` and `commentary` arrays for each siman.
 
 ## Commentaries Supported
 
@@ -212,12 +158,11 @@ Use `--no-clean` to keep original formatting.
 ## Output Files
 
 Each output file contains:
-- **metadata**: Section, commentary identifiers, selected output format, and source attribution for the Tur text and commentary.
-- **total_simanim**: Number of simanim merged.
-- **simanim**: Array of simanim.
-  - In `embedded` mode each siman exposes `entries` that align Tur text with commentaries at their placeholders.
-  - In `sequence` mode each siman retains the legacy `sequence` array of ordered text/commentary segments.
-  - In `simple` mode each siman contains `text` and `commentary` arrays like earlier versions of the script.
+- **title**: Section name
+- **commentary** / **commentary_display**: Internal name and display label for the commentary
+- **total_simanim**: Number of simanim
+- **output_format**: Indicates whether the file was produced in `sequence` (default) or `simple` mode
+- **simanim**: Array of simanim. In sequence mode each siman has an `entries` array ordered as base text followed by commentary notes, each with `source` metadata. In simple mode the siman contains `text` and `commentary` arrays as in previous versions.
 
 ## Example Output Files
 
